@@ -1,0 +1,154 @@
+---
+title: "Dashboard"
+output: 
+  flexdashboard::flex_dashboard:
+    orientation: rows
+    vertical_layout: fill
+---
+
+```{r setup, include=FALSE}
+library(formattable)
+library(flexdashboard)
+library(readr)
+library(dplyr)
+library(leaflet)
+library(crosstalk)
+library(DT)
+library(ggplot2)
+library(lubridate)
+library(tm)
+library(wordcloud)
+```
+
+```{r data} 
+videos <- read_csv("data/academatica_videos.csv")
+videos_stats <- read_csv("data/academatica_video_stats.csv")
+videos_metadata <- read_csv("data/academatica_videos_metadata.csv")
+```
+
+```{r kpis}
+metricas <- videos_stats %>%
+  summarise(tot_views = sum(viewCount),
+            tot_likes = sum(likeCount),
+            tot_dislikes = sum(dislikeCount),
+            tot_favorite = sum(favoriteCount),
+            tot_comments = sum(commentCount))
+```
+
+
+# Metricas {data-icon=fa-ruler}
+
+row
+--------
+
+### REPRODUCCIONES
+
+```{r}
+fviews <- comma(metricas$tot_views, digits = 0)
+valueBox(fviews,icon='fa-eye',color = "success")
+```
+
+
+### LIKES
+
+```{r}
+flikes <- comma(metricas$tot_likes, digits = 0)
+valueBox(flikes,icon='fa-thumbs-up',color = "warning")
+```
+
+### COMENTARIOS
+```{r}
+fcomen <- comma(metricas$tot_comments, digits = 0)
+valueBox(fcomen,icon='fa-comment',color = "danger")
+```
+
+
+row
+--------
+
+### LIKES
+
+```{r}
+rlikes <- metricas$tot_likes / (metricas$tot_likes + metricas$tot_dislikes)
+rlikes <- round(rlikes,2)*100
+gauge(rlikes, min = 0, max = 100, symbol = "%", 
+      gaugeSectors(success = c(80,100), warning = c(40,79), danger = c(0,39)))
+```
+
+### DISLIKES
+
+```{r}
+rdislikes <- metricas$tot_dislikes / (metricas$tot_likes + metricas$tot_dislikes)
+rdislikes <- round(rdislikes,2)*100
+gauge(rdislikes, min = 0, max = 100, symbol = "%",
+      gaugeSectors(danger = c(80,100), warning = c(40,79), success = c(0,39)))
+```
+
+
+row
+--------
+
+### Total de videos subidos
+
+```{r, fig.width=20}
+videos %>%
+  mutate(year = year(ymd_hms(contentDetails.videoPublishedAt)),
+         month = month(ymd_hms(contentDetails.videoPublishedAt)),
+         year = as.factor(year)) %>%
+  group_by(year,month) %>%
+  summarise(uploaded_videos = n()) %>%
+ggplot(aes(x=month, y=uploaded_videos, fill = year)) +
+  geom_col(position = 'dodge') +
+  theme(axis.text.x = element_text())+
+  facet_grid(~year)
+```
+
+# Data {data-ico='fa-database'}
+## {.tabset}
+
+### data
+```{r}
+videos_stats %>%
+  left_join(videos_metadata, by = c('id'='video_id')) %>%
+  select(id,title,description, viewCount, likeCount) %>%
+  datatable()
+```
+
+
+### wordcloud
+```{r}
+docs <- Corpus(VectorSource(videos_metadata$title))
+toSpace <- content_transformer(function (x , pattern ) gsub(pattern, " ", x))
+docs <- tm_map(docs, toSpace, "-")
+docs <- tm_map(docs, toSpace, "\\(")
+docs <- tm_map(docs, toSpace, "\\)")
+docs <- tm_map(docs, toSpace, "\\|")
+
+docs <- tm_map(docs, content_transformer(tolower))
+docs <- tm_map(docs, removeNumbers)
+docs <- tm_map(docs, removeWords, stopwords("spanish"))
+
+docs <- tm_map(docs, removeWords, c("video", 
+                                    "problema",
+                                    "ejemplo",
+                                    "parte",
+                                    "ejercicio",
+                                    "ejercicios",
+                                    "ejemplos")) 
+
+docs <- tm_map(docs, removePunctuation)
+docs <- tm_map(docs, stripWhitespace)
+
+dtm <- TermDocumentMatrix(docs)
+m <- as.matrix(dtm)
+v <- sort(rowSums(m),decreasing=TRUE)
+d <- data.frame(word = names(v),freq=v)
+
+set.seed(1234)
+
+wordcloud(words = d$word, freq = d$freq, min.freq = 1,
+          max.words=100, random.order=TRUE, rot.per=0.1, 
+          colors=brewer.pal(8, "Dark2"))
+```
+
+
