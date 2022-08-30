@@ -23,7 +23,7 @@ shinyServer(function(input, output) {
     dclk_msg<- NULL
     mhover_msg <- NULL
     mbrush_msg <- NULL
-    if(!is.null(input$clk$x) ){
+    if(!is.null(input$clk$x) ){ #clk es el nombre de la respuesta del click
       clk_msg<-
         paste0("click cordenada x= ", round(input$clk$x,2), 
                " click coordenada y= ", round(input$clk$y,2))
@@ -51,7 +51,7 @@ shinyServer(function(input, output) {
     
   })
   output$mtcars_tbl <- renderTable({
-    ## df <- nearPoints(mtcars,input$clk,xvar='wt',yvar='mpg')
+    ## df <- nearPoints(mtcars,input$clk,xvar='wt',yvar='mpg') #este es para que solo sea un punto en específico
     df <- brushedPoints(mtcars,input$mbrush,xvar='wt',yvar='mpg')
     if(nrow(df)!=0){
       df
