@@ -1,0 +1,60 @@
+---
+title: "Proyecto 1 Carlos Alvarado"
+output: 
+  flexdashboard::flex_dashboard:
+    storyboard: true
+---
+
+```{r setup, include=FALSE}
+library(flexdashboard)
+library(dplyr)
+library(ggplot2)
+```
+
+### Data
+
+```{r Data}
+my_data <- read.csv("tienda.csv")
+knitr::kable(my_data %>% sample_n(3), "pipe", caption = "<h1 style='text-align:center'><i>Ejemplo de la data que se manejará</i></h1>",  align = "lccrr")
+```
+
+### Rentabilidad
+
+```{r}
+dat1 <- my_data %>%
+          select(State, Profit) %>%
+          group_by(State) %>%
+          summarise(profit_promedio = mean(Profit))
+  
+
+
+ggplot(dat1, aes(x=State, y=profit_promedio)) + 
+  geom_point(size=3) + 
+  geom_segment(aes(x=State, 
+                   xend=State, 
+                   y=0, 
+                   yend=profit_promedio)) + 
+  labs(title="Profit promedio por estado", 
+       subtitle="-", 
+       caption="source: -") + 
+  theme(axis.text.x = element_text(angle=65, vjust=0.6))
+```
+
+***
+Lollipop Chart de States y su profit promedio.
+
+### Histograma
+
+```{r}
+iris %>%  
+  ggplot(aes(x=Sepal.Width,
+             y=..density.., 
+             color=Species)) +
+  geom_histogram()+
+  geom_density()+
+  facet_wrap(.~Species)
+  
+```
+
+***
+Una explicación
