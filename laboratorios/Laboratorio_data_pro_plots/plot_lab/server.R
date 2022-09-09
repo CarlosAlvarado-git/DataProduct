@@ -72,8 +72,8 @@ shinyServer(function(input, output) {
       doble <- globalVar %>% filter_all(any_vars(. %in% c(df$nombres)))
       if(nrow(doble)==0){
         globalVar <<- rbind(globalVar, df)
-        browser()
-        points(x=input$clk$x, y = input$clk$y,col = 'green', pch = '19')
+        #browser()
+        #points(x=input$clk$x, y = input$clk$y,col = 'green', pch = '19')
       }
       else{
         globalVar <- globalVar[ !(globalVar$nombres %in% c(df$nombres)), ]

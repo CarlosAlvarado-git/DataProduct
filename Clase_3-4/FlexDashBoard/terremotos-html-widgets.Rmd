@@ -56,8 +56,6 @@ data_shared <- SharedData$new(earthquakedata %>%
 ```
 ### Filtros
 ```{r}
-filter_slider("mag", "Magnitud", data_shared, step = 0.1, width = 250, column = ~mag)
-
 filter_select("yr", "Año", data_shared, group = ~yr, multiple = FALSE)
 
 ```
