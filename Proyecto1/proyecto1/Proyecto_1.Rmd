@@ -1,8 +1,6 @@
 ---
-title: "Proyecto 1 Carlos Alvarado"
-output: 
-  flexdashboard::flex_dashboard:
-    storyboard: true
+title: "Tabset Column"
+output: flexdashboard::flex_dashboard
 ---
 
 ```{r setup, include=FALSE}
@@ -14,17 +12,98 @@ library(readr)
 library(leaflet)
 library(crosstalk)
 library(DT)
+library(rnaturalearth)
+library(writexl)
+#install.packages("writexl")
+```
+```{r}
+my_data <- read.csv("tienda.csv")
+datos_p <- my_data %>%
+              summarise(Ventas_totales = sum(Sales),
+              Profit_generado = sum(Profit),  
+              Ordenes_totales = n_distinct(Order.ID),
+              Total_clientes = n_distinct(Customer.ID))
 ```
 
-### Data
+
+
+# Data
+
 
 ```{r Data}
-my_data <- read.csv("tienda.csv")
-knitr::kable(my_data %>% sample_n(3), "pipe", caption = "<h1 style='text-align:center'><i>Ejemplo de la data que se manejará</i></h1>",  align = "lccrr")
+
+my_data %>% head(100) %>% datatable(class = "compact",caption = "Datos ejemplo de la data manejada en el proyecto", width = 800)
+
 ```
 
-### Rentabilidad por estados
+
+
+
+# Rentabilidad
+
+Column {data-width=600}
+-----------------------------------------------------------------------
+
+### Top 10 clientes
+
 ```{r}
+dat3 <- my_data %>%
+          select(Customer.ID, Quantity, Profit) %>%
+          group_by(Customer.ID) %>%
+          summarise(cantidad = sum(Quantity), profit = sum(Profit)) %>%
+          arrange(desc(profit)) %>% head(10)
+
+
+ggplot(dat3, aes(x = Customer.ID, y = profit)) +
+  geom_col() +labs(title="TOP 10 clientes que generan más profit", 
+       subtitle="-", 
+       caption="source: -") + 
+  theme(axis.text.x = element_text(angle=65, vjust=0.6))
+```
+
+### Ventas totales
+
+```{r}
+
+ventas <- comma(datos_p$Ventas_totales, digits = 0)
+valueBox(ventas,icon='fa-dollar-sign',color = "blue")
+```
+
+
+### Profit generado
+
+```{r}
+pro <- comma(datos_p$Profit_generado, digits = 0)
+valueBox(pro,icon='fa-percent',color = "success")
+```
+    
+Column {.tabset data-width=900}
+-----------------------------------------------------------------------
+
+
+### Productos rentables
+```{r}
+dat2 <- my_data %>%
+          select(State, Product.ID, Profit, Category, Sub.Category) %>%
+          group_by(State,Product.ID, Category, Sub.Category) %>%
+          summarise(profit_producto = mean(Profit)) %>%
+          arrange(desc(profit_producto))
+data_shared <- SharedData$new(dat2)
+
+filter_select("State", "Estado: ", data_shared, group = ~State, multiple = FALSE)
+filter_select("Category", "Categoria de producto: ", data_shared, group = ~Category, multiple = FALSE)
+print(filter_select("State", "Estado: ", data_shared, group = ~State, multiple = FALSE))
+data_shared %>%
+  DT::datatable()
+```
+
+
+
+### Profit proemdio por estados
+
+```{r}
+
+
 dat1 <- my_data %>%
           select(State, Profit) %>%
           group_by(State) %>%
@@ -44,64 +123,55 @@ ggplot(dat1, aes(x=State, y=profit_promedio)) +
   theme(axis.text.x = element_text(angle=65, vjust=0.6))
 ```
 
-***
-Lollipop Chart
-States y su profit promedio.
 
-El estado con más profit es:
+# Entregas 
+Column {data-width=300}
+-----------------------------------------------------------------------
 
-1. Vermont:
-    + Con un profit promedio de: 204.088
 
-Hay estados que cuenta con un profit de venta negativo.
+### Credito a clientes
 
-1. :
-    + Arizona
-    + Colorado 
-    + Florida
-    + Ilinios
-    + North Carolina
-    + Ohio
-    + Oregon
-    + Pennsylvania
-    + Tennessee
-    + Texas
-    
-
-### Productos más rentables por estado
 ```{r}
-dat2 <- my_data %>%
-          select(State, Product.ID, Profit, Category, Sub.Category) %>%
-          group_by(State,Product.ID, Category, Sub.Category) %>%
-          summarise(profit_producto = mean(Profit)) %>%
-          arrange(desc(profit_producto))
-data_shared <- SharedData$new(dat2)
-
-filter_select("State", "Estado: ", data_shared, group = ~State, multiple = FALSE)
-filter_select("Category", "Categoria de producto: ", data_shared, group = ~Category, multiple = FALSE)
-print(filter_select("State", "Estado: ", data_shared, group = ~State, multiple = FALSE))
-data_shared %>%
-  DT::datatable()
+creditos <- my_data %>% 
+              select(Discount) %>%
+              group_by(Discount) %>%
+              summarise(cantidad_descuento = n()) %>%
+              arrange(desc(cantidad_descuento))
+creditos %>% datatable(class = "compact",caption = "Tipo de creditos manejados y la cantiadad de veces que fueron dados", width = 200)
 ```
 
-***
-Puede filtar de dos maneras:
 
-  1. Estado:
-      + Se filta por el estado seleccionado y muestra los productos más rentables
-  2. Categoria:
-      + Se filta por la categoria seleccionada y muestra los productos más rentables
+### Ordenes totales
 
-### Clientes con más ventas
 ```{r}
-dat3 <- my_data %>%
-          select(Customer.ID, Product.ID, Quantity, Profit) %>%
-          group_by(Customer.ID, Product.ID) %>%
-          summarise(cantidad = sum(Quantity), profit = sum(Profit)) %>%
-          arrange(desc(profit))
-data_shared1 <- SharedData$new(dat3)    
-data_shared1 %>%
-  DT::datatable()      
+orde <- comma(datos_p$Ordenes_totales, digits = 0)
+valueBox(orde,icon='fa-truck',color = "success")
+```
+
+### Total de clientes
+
+```{r}
+tocli <- comma(datos_p$Total_clientes, digits = 0)
+valueBox(tocli,icon='fa-user',color = "success")
+```
+
+Column {data-width=300}
+-----------------------------------------------------------------------
+```{r}
+
+dat_mapa <- my_data %>%
+          select(State, Profit) %>%
+          group_by(State) %>%
+          summarise(profit_promedio = mean(Profit))
+write_xlsx(dat_mapa, path = "/Users/carlosalvarado/Desktop/DataProduct/Proyecto1/proyecto1/mapas_data.xlsx")
+dat_mapa %>%
+  leaflet() %>%
+  addTiles() %>%
+  addMarkers(lng = ~lon,
+             lat = ~lat,
+             label = ~profit_promedio)
+
+
 ```
 
 
