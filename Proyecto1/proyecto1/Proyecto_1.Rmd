@@ -1,5 +1,5 @@
 ---
-title: "Tabset Column"
+title: "Proyecto 1 Carlos Alvarado"
 output: flexdashboard::flex_dashboard
 ---
 
@@ -14,6 +14,7 @@ library(crosstalk)
 library(DT)
 library(rnaturalearth)
 library(writexl)
+library(readxl)
 #install.packages("writexl")
 ```
 ```{r}
@@ -23,6 +24,10 @@ datos_p <- my_data %>%
               Profit_generado = sum(Profit),  
               Ordenes_totales = n_distinct(Order.ID),
               Total_clientes = n_distinct(Customer.ID))
+datos_n <- my_data %>%
+              select(Segment) %>%
+              group_by(Segment) %>%
+                summarise(cantidad = n())
 ```
 
 
@@ -77,6 +82,14 @@ pro <- comma(datos_p$Profit_generado, digits = 0)
 valueBox(pro,icon='fa-percent',color = "success")
 ```
     
+### Total de clientes
+
+```{r}
+tocli <- comma(datos_p$Total_clientes, digits = 0)
+valueBox(tocli,icon='fa-user',color = "red")
+```
+
+
 Column {.tabset data-width=900}
 -----------------------------------------------------------------------
 
@@ -99,7 +112,7 @@ data_shared %>%
 
 
 
-### Profit proemdio por estados
+### Profit promedio por estados
 
 ```{r}
 
@@ -124,12 +137,8 @@ ggplot(dat1, aes(x=State, y=profit_promedio)) +
 ```
 
 
-# Entregas 
-Column {data-width=300}
------------------------------------------------------------------------
+### Tipos de credito
 
-
-### Credito a clientes
 
 ```{r}
 creditos <- my_data %>% 
@@ -140,38 +149,91 @@ creditos <- my_data %>%
 creditos %>% datatable(class = "compact",caption = "Tipo de creditos manejados y la cantiadad de veces que fueron dados", width = 200)
 ```
 
+# Entregas 
+Column {data-width=300}
+-----------------------------------------------------------------------
+
+
+Del total de observaciones: 9994 obs
+
+
+
+
+
+### Costumer Segment
+
+```{r}
+
+rConsumer <- datos_n[1,2] / (datos_n[1,2] + datos_n[2,2] + datos_n[3,2])
+rConsumer <- round(rConsumer,2)*100
+gauge(rConsumer[1,1], min = 0, max = 100, symbol = "%", 
+      gaugeSectors(success = c(50,100), warning = c(0,49)))
+```
+
+### Corporate Segment
+
+```{r}
+rCorporate <- datos_n[2,2] / (datos_n[1,2] + datos_n[2,2] + datos_n[3,2])
+rCorporate <- round(rCorporate,2)*100
+gauge(rCorporate[1,1], min = 0, max = 100, symbol = "%", 
+      gaugeSectors(success = c(50,100), warning = c(0,49)))
+```
+
+
+### Home Office Segment.
+
+```{r}
+rhome <- datos_n[3,2] / (datos_n[1,2] + datos_n[2,2] + datos_n[3,2])
+rhome <- round(rhome,2)*100
+gauge(rhome[1,1], min = 0, max = 100, symbol = "%", 
+      gaugeSectors(success = c(50,100), warning = c(0,49)))
+```
+
 
 ### Ordenes totales
 
 ```{r}
 orde <- comma(datos_p$Ordenes_totales, digits = 0)
-valueBox(orde,icon='fa-truck',color = "success")
+valueBox(orde,icon='fa-truck',color = "brown")
 ```
 
-### Total de clientes
 
-```{r}
-tocli <- comma(datos_p$Total_clientes, digits = 0)
-valueBox(tocli,icon='fa-user',color = "success")
-```
 
-Column {data-width=300}
+Column { data-width=300}
 -----------------------------------------------------------------------
-```{r}
 
-dat_mapa <- my_data %>%
-          select(State, Profit) %>%
+```{r}
+estados_data <- read_excel('data_estados.xlsx')
+estados_data$lon <- as.numeric(estados_data$lon)
+estados_data[22,4] <- -91.74
+estados_data[26,4] <- -95.86
+estados_data[31,4] <- -73.93
+estados_data[37,4] <- -75.13
+dat5 <- my_data %>%
+          select(State, Sales, Profit) %>%
           group_by(State) %>%
-          summarise(profit_promedio = mean(Profit))
-write_xlsx(dat_mapa, path = "/Users/carlosalvarado/Desktop/DataProduct/Proyecto1/proyecto1/mapas_data.xlsx")
-dat_mapa %>%
+          summarise(ventas = sum(Sales), profit_promedio = mean(Profit)) 
+estados_data$ventas <- dat5$ventas
+
+data_shared2 <- SharedData$new(estados_data)
+
+```
+
+### Ventas y entregas por estado
+```{r}
+data_shared2 %>%
+  DT::datatable()
+```
+
+### Mapa
+```{r}
+data_shared2 %>%
   leaflet() %>%
   addTiles() %>%
   addMarkers(lng = ~lon,
              lat = ~lat,
-             label = ~profit_promedio)
+             label = ~entregas_estado)
 
 
 ```
-
 
