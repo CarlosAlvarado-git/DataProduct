@@ -1,22 +1,23 @@
+
 library(shiny)
-library(DT)
 library(readr)
+library(DT)
 
 shinyServer(function(input, output) {
-  
-  archivo_cargado <- reactive({
-    contenido_archivo <- input$file_input
+
+archivo_cargado <- reactive({
+    contenido_archivo<-input$file_upload
     if(is.null(contenido_archivo)){
-      return(NULL)
-    } else if (grepl('.csv', contenido_archivo$name)){
-      out <- read_csv(contenido_archivo$datapath)
-      return(out)
+        return(NULL)
     }
-    return(NULL)
-  })
-  
-  output$contenido_archivo <- renderDataTable({
-    datatable(archivo_cargado())
-  })
-  
+     out <- read_csv(contenido_archivo$datapath)
+     return(out)
+})
+
+
+output$contenido_archivo <- DT::renderDataTable({
+    DT::datatable(archivo_cargado())
+    
+})
+
 })
