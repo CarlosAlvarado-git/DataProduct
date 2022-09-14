@@ -12,10 +12,15 @@ mi_tabla$nombres <- row.names(mi_tabla)
 shinyServer(function(input, output) {
   
   grafica <- reactive({
-    #browser()
+    browser()
     plot(mtcars$wt,mtcars$mpg, xlab = "wt", ylab="millas por galon")
-    df <- puntos()
-    points(df$wt, df$mpg, col = "green", pch = 21)
+    #df1 <- puntos()
+    #browser()
+    if(!is.null(globalVar)){
+      points(globalVar$wt, globalVar$mpg, col = "green", pch = 21)
+    }
+    
+    
   })
 
   
@@ -52,6 +57,7 @@ shinyServer(function(input, output) {
   
   puntos <- reactive({
     if(!is.null(input$clk) ){
+      print("Entre a clk")
       browser()
       if(is.null(globalVar)){
         df <- nearPoints(mi_tabla,input$clk,xvar='wt',yvar='mpg',threshold = 2) #este es para que solo sea un punto en específico
@@ -67,7 +73,8 @@ shinyServer(function(input, output) {
         return(globalVar)
       }
     }
-    if(!is.null(input$dclk)){
+    else if(!is.null(input$dclk)){
+      print("Entre a dclk")
       if(is.null(globalVar)){
         df <- nearPoints(mi_tabla,input$dclk,xvar='wt',yvar='mpg',threshold = 2)
         globalVar <<- rbind(globalVar, df)
@@ -80,31 +87,34 @@ shinyServer(function(input, output) {
       }
         
     }
-    if(!is.null(input$mbrush)){
+    else if(!is.null(input$mbrush)){
+      print("Entre a mbrush")
       if(is.null(globalVar)){
-        df <- brushedPoints(mtcars,input$mbrush,xvar='wt',yvar='mpg') 
+        df <- brushedPoints(mi_tabla,input$mbrush,xvar='wt',yvar='mpg') 
         globalVar <<- rbind(globalVar, df)
         return(globalVar)
       }
       else{
-        df <- brushedPoints(mtcars,input$mbrush,xvar='wt',yvar='mpg') #los puntos seleccionados
+        browser()
+        df <- brushedPoints(mi_tabla,input$mbrush,xvar='wt',yvar='mpg') #los puntos seleccionados
         doble <- globalVar %>% filter_all(any_vars(. %in% c(df$nombres)))
+        df <- df[ !(df$nombres %in% c(doble$nombres)), ]
         if(nrow(doble)==0){
+          globalVar <<- rbind(globalVar, df)
+        }
+        else if (nrow(df)!=0){
           globalVar <<- rbind(globalVar, df)
         }
         return(globalVar)
       }
     }
-    else{
-      NULL
-      
-    }
+    return(globalVar)
   })
   
   
   output$mtcars_tbl <- renderTable({
-    puntos()
-  })
+    browser()
+    puntos()})
   
   
   
