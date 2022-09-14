@@ -12,14 +12,12 @@ mi_tabla$nombres <- row.names(mi_tabla)
 shinyServer(function(input, output) {
   
   grafica <- reactive({
-    browser()
     plot(mtcars$wt,mtcars$mpg, xlab = "wt", ylab="millas por galon")
-    #df1 <- puntos()
+    df1 <- puntos()
     #browser()
-    if(!is.null(globalVar)){
-      points(globalVar$wt, globalVar$mpg, col = "green", pch = 21)
-    }
-    
+    points(df1$wt, df1$mpg, col = "green", pch = 21)
+    df2 <- puntos_hover()
+    points(df2$wt, df2$mpg, col = "gray", pch = 21)
     
   })
 
@@ -33,6 +31,7 @@ shinyServer(function(input, output) {
       clk_msg<-
         paste0("click cordenada x= ", round(input$clk$x,2), 
                " click coordenada y= ", round(input$clk$y,2))
+      puntos()
     }
     if(!is.null(input$dclk$x) ){
       dclk_msg<-paste0("doble click cordenada x= ", round(input$dclk$x,2), 
@@ -41,6 +40,7 @@ shinyServer(function(input, output) {
     if(!is.null(input$mhover$x) ){
       mhover_msg<-paste0("hover cordenada x= ", round(input$mhover$x,2), 
                          " hover coordenada y= ", round(input$mhover$y,2))
+      
     }
     
     
@@ -54,11 +54,15 @@ shinyServer(function(input, output) {
     
   })
   
-  
+  puntos_hover <- reactive({
+    print("Entre a mhover")
+    df <- nearPoints(mi_tabla,input$mhover,xvar='wt',yvar='mpg',threshold = 5)
+    return(df)
+  })
   puntos <- reactive({
     if(!is.null(input$clk) ){
       print("Entre a clk")
-      browser()
+      #browser()
       if(is.null(globalVar)){
         df <- nearPoints(mi_tabla,input$clk,xvar='wt',yvar='mpg',threshold = 2) #este es para que solo sea un punto en específico
         globalVar <<- rbind(globalVar, df)
@@ -73,21 +77,20 @@ shinyServer(function(input, output) {
         return(globalVar)
       }
     }
-    else if(!is.null(input$dclk)){
+    if(!is.null(input$dclk)){
+      browser()
       print("Entre a dclk")
       if(is.null(globalVar)){
-        df <- nearPoints(mi_tabla,input$dclk,xvar='wt',yvar='mpg',threshold = 2)
-        globalVar <<- rbind(globalVar, df)
         return(globalVar)
       }
       else{
-        df <- nearPoints(mi_tabla,input$dclk,xvar='wt',yvar='mpg',threshold = 2) #este es para que solo sea un punto en específico
+        df <- nearPoints(mi_tabla,input$dclk,xvar='wt',yvar='mpg',threshold = 5) #este es para que solo sea un punto en específico
         globalVar <- globalVar[ !(globalVar$nombres %in% c(df$nombres)), ]
         return(globalVar)
       }
         
     }
-    else if(!is.null(input$mbrush)){
+    if(!is.null(input$mbrush)){
       print("Entre a mbrush")
       if(is.null(globalVar)){
         df <- brushedPoints(mi_tabla,input$mbrush,xvar='wt',yvar='mpg') 
@@ -95,7 +98,7 @@ shinyServer(function(input, output) {
         return(globalVar)
       }
       else{
-        browser()
+        #browser()
         df <- brushedPoints(mi_tabla,input$mbrush,xvar='wt',yvar='mpg') #los puntos seleccionados
         doble <- globalVar %>% filter_all(any_vars(. %in% c(df$nombres)))
         df <- df[ !(df$nombres %in% c(doble$nombres)), ]
@@ -113,7 +116,7 @@ shinyServer(function(input, output) {
   
   
   output$mtcars_tbl <- renderTable({
-    browser()
+    #browser()
     puntos()})
   
   
