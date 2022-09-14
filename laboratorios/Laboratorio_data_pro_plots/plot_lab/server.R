@@ -5,14 +5,6 @@ library(DT)
 
 globalVar <- NULL
 doble <- NULL
-arr_puntos <- data.frame(matrix(ncol = 2, nrow = 0))
-x <- c("x", "y")
-colnames(arr_puntos) <- x
-puntacos <- data.frame(matrix(ncol = 2, nrow = 1))
-x <- c("x", "y")
-colnames(puntacos) <- x
-puntacos$x <- as.numeric(puntacos$x)
-puntacos$y <- as.numeric(puntacos$y)
 mi_tabla <- mtcars
 mi_tabla$nombres <- row.names(mi_tabla)
 
@@ -20,6 +12,7 @@ mi_tabla$nombres <- row.names(mi_tabla)
 shinyServer(function(input, output) {
   
   grafica <- reactive({
+    #browser()
     plot(mtcars$wt,mtcars$mpg, xlab = "wt", ylab="millas por galon")
     df <- puntos()
     points(df$wt, df$mpg, col = "green", pch = 21)
@@ -58,11 +51,12 @@ shinyServer(function(input, output) {
   
   
   puntos <- reactive({
-    df <- NULL
-    browser()
-    if(!is.null(input$clk)){
+    if(!is.null(input$clk) ){
+      browser()
       if(is.null(globalVar)){
+        df <- nearPoints(mi_tabla,input$clk,xvar='wt',yvar='mpg',threshold = 2) #este es para que solo sea un punto en específico
         globalVar <<- rbind(globalVar, df)
+        return(globalVar)
       }
       else{
         df <- nearPoints(mi_tabla,input$clk,xvar='wt',yvar='mpg',threshold = 2) #este es para que solo sea un punto en específico
@@ -70,31 +64,27 @@ shinyServer(function(input, output) {
         if(nrow(doble)==0){
           globalVar <<- rbind(globalVar, df)
         }
-        if(nrow(globalVar)!=0){
-          return(globalVar)
-        } else {
-          NULL
-        }
+        return(globalVar)
       }
     }
     if(!is.null(input$dclk)){
       if(is.null(globalVar)){
+        df <- nearPoints(mi_tabla,input$dclk,xvar='wt',yvar='mpg',threshold = 2)
         globalVar <<- rbind(globalVar, df)
+        return(globalVar)
       }
       else{
         df <- nearPoints(mi_tabla,input$dclk,xvar='wt',yvar='mpg',threshold = 2) #este es para que solo sea un punto en específico
         globalVar <- globalVar[ !(globalVar$nombres %in% c(df$nombres)), ]
-        if(nrow(globalVar)!=0){
-          return(globalVar)
-        } else {
-          NULL
-        }
+        return(globalVar)
       }
         
     }
     if(!is.null(input$mbrush)){
       if(is.null(globalVar)){
+        df <- brushedPoints(mtcars,input$mbrush,xvar='wt',yvar='mpg') 
         globalVar <<- rbind(globalVar, df)
+        return(globalVar)
       }
       else{
         df <- brushedPoints(mtcars,input$mbrush,xvar='wt',yvar='mpg') #los puntos seleccionados
@@ -102,11 +92,7 @@ shinyServer(function(input, output) {
         if(nrow(doble)==0){
           globalVar <<- rbind(globalVar, df)
         }
-        if(nrow(globalVar)!=0){
-          return(globalVar)
-        } else {
-          NULL
-        }
+        return(globalVar)
       }
     }
     else{
