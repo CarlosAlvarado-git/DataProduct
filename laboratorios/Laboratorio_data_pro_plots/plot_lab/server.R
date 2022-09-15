@@ -4,6 +4,7 @@ library(dplyr)
 library(DT)
 
 globalVar <- NULL
+globalVar2 <- NULL
 doble <- NULL
 mi_tabla <- mtcars
 mi_tabla$nombres <- row.names(mi_tabla)
@@ -15,9 +16,9 @@ shinyServer(function(input, output) {
     plot(mtcars$wt,mtcars$mpg, xlab = "wt", ylab="millas por galon")
     df1 <- puntos()
     #browser()
-    points(df1$wt, df1$mpg, col = "green", pch = 21)
+    points(df1$wt, df1$mpg, col = "green", pch = 19)
     df2 <- puntos_hover()
-    points(df2$wt, df2$mpg, col = "gray", pch = 21)
+    points(df2$wt, df2$mpg, col = "gray", pch = 19)
     
   })
 
@@ -56,8 +57,25 @@ shinyServer(function(input, output) {
   
   puntos_hover <- reactive({
     print("Entre a mhover")
-    df <- nearPoints(mi_tabla,input$mhover,xvar='wt',yvar='mpg',threshold = 5)
-    return(df)
+    #browser()
+    if(is.null(globalVar2)){
+      df <- nearPoints(mi_tabla,input$mhover,xvar='wt',yvar='mpg',threshold = 5)
+      globalVar2 <<- rbind(globalVar2, df)
+      return(globalVar2)
+    }
+    else{
+      df <- nearPoints(mi_tabla,input$mhover,xvar='wt',yvar='mpg',threshold = 5)#este es para que solo sea un punto en específico
+      if(nrow(df)==0){
+        return(globalVar2)
+      }
+      globalVar2 <<- NULL
+      doble <- globalVar %>% filter_all(any_vars(. %in% c(df$nombres)))
+      if(nrow(doble)==0){
+        globalVar2 <<- rbind(globalVar2, df)
+        return(globalVar2)
+      }
+      return(globalVar2)
+    }
   })
   puntos <- reactive({
     if(!is.null(input$clk) ){
@@ -78,14 +96,14 @@ shinyServer(function(input, output) {
       }
     }
     if(!is.null(input$dclk)){
-      browser()
+      #browser()
       print("Entre a dclk")
       if(is.null(globalVar)){
         return(globalVar)
       }
       else{
         df <- nearPoints(mi_tabla,input$dclk,xvar='wt',yvar='mpg',threshold = 5) #este es para que solo sea un punto en específico
-        globalVar <- globalVar[ !(globalVar$nombres %in% c(df$nombres)), ]
+        globalVar <<- globalVar[ !(globalVar$nombres %in% c(df$nombres)), ]
         return(globalVar)
       }
         
