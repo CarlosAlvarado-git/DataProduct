@@ -6,8 +6,7 @@ library(rpart)
 #* @apiDescription Este api nos servira para predicir
 #* si un pasajero del titanic sobrevive o no
 
-fit <- readRDS("modelo_final.rds")
-
+fit <- readRDS(gzcon(url("https://github.com/CarlosAlvarado-git/DataProduct/blob/main/ufm-dp-2022-main/Plumber/api_plumber/modelo_final.rds?raw=true")))
 #* Prediccion de sobrevivencia de un pasajero
 #* @param Pclass clase en el que viajabe el pasajero
 #* @param Sex Sexo del pasajero
